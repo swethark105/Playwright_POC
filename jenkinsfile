@@ -1,0 +1,42 @@
+pipeline {
+  agent any
+
+  tools {
+    nodejs 'NodeJS_Playwright'  // Name from Jenkins → Global Tool Configuration
+  }
+
+  environment {
+    CI = 'true'
+  }
+
+  stages {
+    stage('Install dependencies') {
+      steps {
+        bat 'npm ci'
+        bat 'npx playwright install'
+      }
+    }
+
+    stage('Run Playwright tests') {
+      steps {
+        bat 'npx playwright test'
+      }
+    }
+
+    stage('Publish HTML Report') {
+      steps {
+        publishHTML(target: [
+          reportDir: 'playwright-report',
+          reportFiles: 'index.html',
+          reportName: 'Playwright Report'
+        ])
+      }
+    }
+  }
+
+  post {
+    always {
+      archiveArtifacts artifacts: 'playwright-report/**', allowEmptyArchive: true
+    }
+  }
+}
