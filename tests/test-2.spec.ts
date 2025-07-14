@@ -11,7 +11,10 @@ test('test with step-by-step screenshots', async ({ page }) => {
 
   await page.goto('https://www.saucedemo.com/');
    await screenshot('01-login-page');
+  await expect(page.getByText("Swag Labs")).toBeVisible();
+
   await page.locator('[data-test="username"]').fill('standard_user');
+  //await expect(page.getByText('')).toBeVisible();
 
   await screenshot('02-enter username');
   await page.locator('[data-test="username"]').press('Tab');

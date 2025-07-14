@@ -1,25 +1,32 @@
 pipeline {
   agent any
 
-  tools {
-    nodejs 'NodeJS_Playwright'  // Name from Jenkins → Global Tool Configuration
-  }
-
   environment {
     CI = 'true'
   }
 
   stages {
-    stage('Install dependencies') {
+    stage('Checkout Code') {
       steps {
-        bat 'npm ci'
-        bat 'npx playwright install'
+        checkout scm
       }
     }
 
-    stage('Run Playwright tests') {
+    stage('Build Playwright Docker Image') {
       steps {
-        bat 'npx playwright test'
+        script {
+          dockerImage = docker.build('playwright-tests')
+        }
+      }
+    }
+
+    stage('Run Playwright Tests in Docker') {
+      steps {
+        script {
+          dockerImage.inside {
+            sh 'npx playwright test'
+          }
+        }
       }
     }
 
