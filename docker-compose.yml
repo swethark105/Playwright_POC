@@ -1,0 +1,11 @@
+version: '3.9'
+
+services:
+  playwright-tests:
+    build: .
+    container_name: playwright_runner
+    volumes:
+      - ./playwright-report:/app/playwright-report   # Save reports locally
+    environment:
+      - CI=true
+    command: npx playwright test
