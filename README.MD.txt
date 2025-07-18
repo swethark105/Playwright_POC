@@ -1,6 +1,6 @@
 # 🎭 Playwright POC – UI Test Automation with TypeScript
 
-This project demonstrates an end-to-end UI test automation framework using Playwright and TypeScript. It includes step-by-step screenshots, CI integration with Jenkins on Windows, and testing of key functionalities like login, adding to cart, and navigating to the shopping cart.
+This project demonstrates an end-to-end UI test automation framework using Playwright and TypeScript for a eCommerce application. It includes step-by-step screenshots, CI integration with Jenkins on Windows, and testing of key functionalities like login, adding to cart, and navigating to the shopping cart.
 
 ---
 
