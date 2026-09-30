@@ -1,41 +1,73 @@
+import { LoginPage } from '../pages/LoginPage';
 import { test, expect } from '@playwright/test';
-import fs from 'fs';
-const timestamp = new Date().toISOString().replace(/[:.]/g, '-'); // e.g., 2025-07-08T23-51-00-000Z
+import AxeBuilder from '@axe-core/playwright';
 
-test('test with step-by-step screenshots', async ({ page }) => {
+test('user can log in and add a backpack to cart', async ({
+  page,
+}, testInfo) => {
+  const loginPage = new LoginPage(page);
+
+  // Save screenshots separately for each test and browser.
   const screenshot = async (step: string) => {
-        const dir = 'C:/Users/ramak/OneDrive/Documents/Playwright/screenshots';
-    if (!fs.existsSync('dir')) fs.mkdirSync(dir, {recursive: true});
-    await page.screenshot({ path: `${dir}/${step}-${timestamp}.png`, fullPage: true });
+    const image = await page.screenshot({
+      path: testInfo.outputPath(`${step}.png`),
+      fullPage: true,
+    });
+
+    await testInfo.attach(step, {
+      body: image,
+      contentType: 'image/png',
+    });
   };
 
-  await page.goto('https://www.saucedemo.com/');
-   await screenshot('01-login-page');
-  await expect(page.getByText("Swag Labs")).toBeVisible();
+  // Record accessibility findings in the HTML report.
+  const scanAccessibility = async (step: string) => {
+    const results = await new AxeBuilder({ page }).analyze();
 
-  await page.locator('[data-test="username"]').fill('standard_user');
-  //await expect(page.getByText('')).toBeVisible();
+    await testInfo.attach(`${step}-accessibility`, {
+      body: JSON.stringify(results, null, 2),
+      contentType: 'application/json',
+    });
+  };
 
-  await screenshot('02-enter username');
-  await page.locator('[data-test="username"]').press('Tab');
+  // Step 1: Open login page.
+  await loginPage.open();
+  await expect(page.getByText('Swag Labs', { exact: true })).toBeVisible();
+  await screenshot('01-login-page');
+  await scanAccessibility('login');
 
-  await page.locator('[data-test="password"]').fill('secret_sauce');
-   await screenshot('03-password-filled');
+  // Step 2: Enter username.
+  await loginPage.enterUsername('standard_user');
+  await screenshot('02-username-filled');
 
-  await page.locator('[data-test="login-button"]').click();
-   await page.waitForLoadState();
+  // Step 3: Enter password.
+  await loginPage.enterPassword('secret_sauce');
+  await screenshot('03-password-filled');
+
+  // Step 4: Log in and verify the inventory page.
+  await loginPage.submit();
+  await expect(page).toHaveURL(/\/inventory\.html$/);
   await screenshot('04-logged-in');
+  await scanAccessibility('inventory');
 
-  await page.locator('[data-test="add-to-cart-sauce-labs-backpack"]').click();
-  await page.waitForLoadState()
+  // Step 5: Add backpack and verify the cart count.
+  await page
+    .locator('[data-test="add-to-cart-sauce-labs-backpack"]')
+    .click();
 
-    await screenshot('05-added-to-cart');
+  await expect(
+    page.locator('[data-test="shopping-cart-badge"]')
+  ).toHaveText('1');
+
+  await screenshot('05-added-to-cart');
+
+  // Step 6: Open cart and verify the backpack.
   await page.locator('[data-test="shopping-cart-link"]').click();
+  await expect(page).toHaveURL(/\/cart\.html$/);
+  await expect(
+    page.locator('[data-test="inventory-item-name"]')
+  ).toHaveText('Sauce Labs Backpack');
 
-  await page.waitForLoadState();
   await screenshot('06-cart-page');
-
-
+  await scanAccessibility('cart');
 });
-
-
