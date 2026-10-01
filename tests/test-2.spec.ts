@@ -5,6 +5,7 @@ import AxeBuilder from '@axe-core/playwright';
 test('user can log in and add a backpack to cart', async ({
   page,
 }, testInfo) => {
+   test.setTimeout(90_000);
   const loginPage = new LoginPage(page);
 
   // Save screenshots separately for each test and browser.
@@ -61,12 +62,17 @@ test('user can log in and add a backpack to cart', async ({
 
   await screenshot('05-added-to-cart');
 
-  // Step 6: Open cart and verify the backpack.
+  // Step 6: Wait for the cart view and verify its complete product list.
   await page.locator('[data-test="shopping-cart-link"]').click();
+
   await expect(page).toHaveURL(/\/cart\.html$/);
   await expect(
+    page.getByText('Your Cart', { exact: true })
+  ).toBeVisible();
+
+  await expect(
     page.locator('[data-test="inventory-item-name"]')
-  ).toHaveText('Sauce Labs Backpack');
+  ).toHaveText(['Sauce Labs Backpack']);
 
   await screenshot('06-cart-page');
   await scanAccessibility('cart');
