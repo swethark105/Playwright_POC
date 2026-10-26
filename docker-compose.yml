@@ -1,11 +1,11 @@
-version: '3.9'
-
 services:
   playwright-tests:
     build: .
     container_name: playwright_runner
+    ipc: host # recommended by Playwright to avoid Chromium running out of memory
     volumes:
-      - ./playwright-report:/app/playwright-report   # Save reports locally
+      - ./playwright-report:/app/playwright-report # save the HTML report locally
+      - ./test-results:/app/test-results # traces, videos and junit.xml
     environment:
       - CI=true
     command: npx playwright test

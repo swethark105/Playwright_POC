@@ -23,7 +23,9 @@ pipeline {
     stage('Run Playwright Tests in Docker') {
       steps {
         script {
-          dockerImage.inside {
+          // inside() runs in the Jenkins workspace, not /app, so install dependencies there.
+          dockerImage.inside('--ipc=host') {
+            sh 'npm ci'
             sh 'npx playwright test'
           }
         }
@@ -43,6 +45,7 @@ pipeline {
 
   post {
     always {
+      junit testResults: 'test-results/junit.xml', allowEmptyResults: true
       archiveArtifacts artifacts: 'playwright-report/**', allowEmptyArchive: true
     }
   }
