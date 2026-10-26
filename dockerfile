@@ -1,21 +1,14 @@
-# Use official Playwright image with Node.js and browsers pre-installed
-FROM mcr.microsoft.com/playwright:v1.43.1
+# Official Playwright image with Node.js and browsers pre-installed.
+# Keep this tag in step with the @playwright/test version in package-lock.json,
+# otherwise the bundled browsers won't match what Playwright expects.
+FROM mcr.microsoft.com/playwright:v1.53.2-noble
 
-# Set working directory inside the container
 WORKDIR /app
 
-# Copy package.json and package-lock.json first for dependency caching
+# Copy package files first so the dependency layer is cached between builds.
 COPY package*.json ./
-
-# Install Node.js dependencies
 RUN npm ci
 
-# Copy the rest of the project files (including tests folder)
 COPY . .
 
-# Install Playwright browsers (usually already installed, but safe to confirm)
-RUN npx playwright install
-
-# Default command: Run Playwright tests
 CMD ["npx", "playwright", "test"]
-
