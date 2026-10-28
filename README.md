@@ -98,7 +98,18 @@ GitHub Actions runs the full suite:
 
 Each run type-checks the code, runs UI and API tests, and uploads the HTML report and test results as an artifact kept for 30 days. GitHub notifies the person who last edited the schedule when a scheduled run fails. GitHub pauses scheduled workflows after 60 days with no repository activity; re-enable it from the Actions tab if that happens.
 
-The `jenkinsfile` builds the Docker image, runs the tests inside it, and publishes the HTML and JUnit reports.
+### Jenkins
+
+The `jenkinsfile` runs the suite with Node.js directly, so it works on Windows and Linux agents without Docker. It runs **every day between 7:00 and 7:59 AM Eastern**, follows daylight saving time, and publishes the HTML report, JUnit results, and archived test output for each build.
+
+Setup in Jenkins:
+
+1. Install the **Pipeline**, **NodeJS**, **HTML Publisher**, **JUnit**, and **Timestamper** plugins.
+2. Under **Manage Jenkins → Tools → NodeJS installations**, add one named `NodeJS_Playwright` (Node.js 24).
+3. Create a **Pipeline** job, choose **Pipeline script from SCM**, set the repository to `https://github.com/swethark105/Playwright_POC.git`, branch `*/main`, and script path `jenkinsfile`.
+4. Click **Build Now** once. Jenkins registers the daily schedule after the first build.
+
+To run the suite in Docker instead, use `docker compose up --build`.
 
 ## AI-assisted test authoring (Playwright MCP)
 
@@ -123,7 +134,8 @@ Generated tests are drafts: review locators, assertions, and test data before co
 - `playwright.config.ts`: projects, retries, workers, and reporters
 - `tsconfig.json`: TypeScript configuration
 - `.github/workflows/playwright.yml`: CI and daily schedule
-- `jenkinsfile`, `dockerfile`, `docker-compose.yml`: Jenkins and Docker execution
+- `jenkinsfile`: Jenkins pipeline with a daily schedule
+- `dockerfile`, `docker-compose.yml`: Docker execution
 - `.mcp.json`, `.vscode/mcp.json`: Playwright MCP server configuration
 
 ## Future improvements
