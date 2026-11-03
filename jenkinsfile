@@ -1,44 +1,63 @@
+// Runs the Playwright suite with Node.js directly (no Docker), on Windows or Linux agents.
+// Requires these Jenkins plugins: Pipeline, NodeJS, HTML Publisher, JUnit, Timestamper.
+// The NodeJS tool name below must match Manage Jenkins -> Tools -> NodeJS installations.
+
+// Run a command with the right shell for the agent: bat on Windows, sh elsewhere.
+def runCmd(String command) {
+  if (isUnix()) {
+    sh command
+  } else {
+    bat command
+  }
+}
+
 pipeline {
   agent any
+
+  tools {
+    nodejs 'NodeJS_Playwright'
+  }
+
+  triggers {
+    // Every day between 7:00 and 7:59 AM Eastern (Jenkins picks a fixed minute in that hour).
+    // TZ makes Jenkins follow daylight saving time, unlike GitHub's UTC-only schedule.
+    // Jenkins registers this trigger after the job has run once.
+    cron('TZ=America/New_York\nH 7 * * *')
+  }
+
+  options {
+    timestamps()
+    timeout(time: 30, unit: 'MINUTES')
+    buildDiscarder(logRotator(numToKeepStr: '30'))
+    disableConcurrentBuilds()
+  }
 
   environment {
     CI = 'true'
   }
 
   stages {
-    stage('Checkout Code') {
+    stage('Install dependencies') {
       steps {
-        checkout scm
+        script { runCmd 'npm ci' }
       }
     }
 
-    stage('Build Playwright Docker Image') {
+    stage('Install browsers') {
       steps {
-        script {
-          dockerImage = docker.build('playwright-tests')
-        }
+        script { runCmd 'npx playwright install chromium firefox' }
       }
     }
 
-    stage('Run Playwright Tests in Docker') {
+    stage('Type-check') {
       steps {
-        script {
-          // inside() runs in the Jenkins workspace, not /app, so install dependencies there.
-          dockerImage.inside('--ipc=host') {
-            sh 'npm ci'
-            sh 'npx playwright test'
-          }
-        }
+        script { runCmd 'npm run typecheck' }
       }
     }
 
-    stage('Publish HTML Report') {
+    stage('Run UI and API tests') {
       steps {
-        publishHTML(target: [
-          reportDir: 'playwright-report',
-          reportFiles: 'index.html',
-          reportName: 'Playwright Report'
-        ])
+        script { runCmd 'npm test' }
       }
     }
   }
@@ -46,7 +65,15 @@ pipeline {
   post {
     always {
       junit testResults: 'test-results/junit.xml', allowEmptyResults: true
-      archiveArtifacts artifacts: 'playwright-report/**', allowEmptyArchive: true
+      publishHTML(target: [
+        reportDir: 'playwright-report',
+        reportFiles: 'index.html',
+        reportName: 'Playwright Report',
+        keepAll: true,
+        alwaysLinkToLastBuild: true,
+        allowMissing: true
+      ])
+      archiveArtifacts artifacts: 'playwright-report/**, test-results/**', allowEmptyArchive: true
     }
   }
 }
