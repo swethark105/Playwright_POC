@@ -1,7 +1,7 @@
 # Official Playwright image with Node.js and browsers pre-installed.
 # Keep this tag in step with the @playwright/test version in package-lock.json,
 # otherwise the bundled browsers won't match what Playwright expects.
-FROM mcr.microsoft.com/playwright:v1.53.2-noble
+FROM mcr.microsoft.com/playwright:v1.65.0-noble
 
 WORKDIR /app
 
